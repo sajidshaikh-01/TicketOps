@@ -1,0 +1,34 @@
+# Applies to every Docker build in this monorepo (build context is always
+# the repo root, since services depend on the shared packages/prisma package).
+
+node_modules
+**/node_modules
+**/dist
+**/build
+**/.turbo
+
+# Env files (secrets must be passed at runtime, never baked into an image)
+.env
+**/.env
+!.env.example
+!**/.env.example
+
+# Prisma generated client - regenerated fresh inside every build stage
+packages/prisma/generated
+
+# VCS / editor / OS noise
+.git
+.gitignore
+.vscode
+.idea
+.DS_Store
+
+# Docs and local-only files irrelevant to any image
+README.md
+**/README.md
+docker-compose.yml
+*.md
+
+# Test artifacts
+coverage
+**/coverage

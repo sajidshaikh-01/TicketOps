@@ -1,0 +1,44 @@
+version: '3.9'
+
+# Phase 1 scope: only the infrastructure the app depends on (Postgres, Redis)
+# runs in containers. The NestJS services and the Vite dashboard still run
+# directly on the host with `npm run dev:*` so the inner dev loop stays fast.
+# Phase 2 of the roadmap adds Dockerfiles + full docker-compose for the app
+# services themselves.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ticketops-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ticketops
+      POSTGRES_PASSWORD: ticketops
+      POSTGRES_DB: ticketops
+    ports:
+      - '5432:5432'
+    volumes:
+      - ticketops_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ticketops -d ticketops']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: ticketops-redis
+    restart: unless-stopped
+    ports:
+      - '6379:6379'
+    volumes:
+      - ticketops_redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  ticketops_postgres_data:
+  ticketops_redis_data:

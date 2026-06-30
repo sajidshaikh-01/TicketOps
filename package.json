@@ -1,0 +1,34 @@
+{
+  "name": "ticketops",
+  "private": true,
+  "version": "1.0.0",
+  "description": "TicketOps - Production-grade event ticketing platform (DevSecOps & SRE showcase)",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:db": "docker compose up -d postgres redis",
+    "dev:db:down": "docker compose down",
+    "prisma:generate": "npm run generate --workspace=@ticketops/prisma",
+    "prisma:migrate": "npm run migrate --workspace=@ticketops/prisma",
+    "prisma:seed": "npm run seed --workspace=@ticketops/prisma",
+    "prisma:studio": "npm run studio --workspace=@ticketops/prisma",
+    "dev:events-api": "npm run start:dev --workspace=@ticketops/events-api",
+    "dev:admin-api": "npm run start:dev --workspace=@ticketops/admin-api",
+    "dev:bookings-worker": "npm run start:dev --workspace=@ticketops/bookings-worker",
+    "dev:dashboard": "npm run dev --workspace=@ticketops/dashboard",
+    "dev:all": "concurrently -n events-api,admin-api,worker,dashboard -c blue,green,yellow,magenta \"npm:dev:events-api\" \"npm:dev:admin-api\" \"npm:dev:bookings-worker\" \"npm:dev:dashboard\"",
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "docker:build": "bash docker/build-all.sh",
+    "docker:push": "bash docker/push-all.sh",
+    "docker:run": "bash docker/run-local.sh"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.1"
+  }
+}

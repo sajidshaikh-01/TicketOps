@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TicketOps &mdash; Find your seat</title>
+    <meta name="description" content="Browse live events and book seats in real time. No double bookings, ever." />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div id="root"></div>
+    <!--
+      Generated at container start by docker/docker-entrypoint.sh from real
+      environment variables (see apps/dashboard/docker/). In local `npm run
+      dev`, this file doesn't exist and the browser's 404 for it is silently
+      ignored - clients.ts falls back to the build-time VITE_* env vars in
+      that case, so dev workflow is unaffected.
+    -->
+    <script src="/config.js" onerror="console.debug('No runtime config.js found; using build-time env vars instead.')"></script>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
