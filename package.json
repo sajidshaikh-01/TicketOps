@@ -8,6 +8,7 @@
     "apps/*"
   ],
   "scripts": {
+    "postinstall": "npm run generate --workspace=@ticketops/prisma",
     "dev:db": "docker compose up -d postgres redis",
     "dev:db:down": "docker compose down",
     "prisma:generate": "npm run generate --workspace=@ticketops/prisma",
