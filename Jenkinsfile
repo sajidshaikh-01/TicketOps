@@ -22,5 +22,10 @@ pipeline {
                 echo "Building branch ${env.GIT_BRANCH_NAME}"
             }
         }
+        stage('Installl Dependencies') {
+            steps {
+                sh 'npm ci'
+            }
+        }
     }
 }
