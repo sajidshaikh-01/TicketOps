@@ -2,9 +2,9 @@ pipeline {
     agent {
         label 'ticketops-agent'
     }
-    stages{
+    stages {
 
-        stage('Checkout'){
+        stage('Checkout') {
             steps {
                 checkout scm
                 script {
@@ -22,17 +22,18 @@ pipeline {
                 echo "Building branch ${env.GIT_BRANCH_NAME}"
             }
         }
-        stage('Installl Dependencies') {
+
+        stage('Install Dependencies') {
             steps {
                 sh 'npm ci'
-                sh 'npm run prisma:generate --workspace=@ticketops/prisma'
             }
         }
+
         stage('Code Quality') {
             steps {
                 sh 'npm run lint --workspaces --if-present'
-                sh 'npm run generate --workspace=@ticketops/prisma'
-            }   
+                sh 'npm run typecheck --workspaces --if-present'
+            }
         }
     }
 }
