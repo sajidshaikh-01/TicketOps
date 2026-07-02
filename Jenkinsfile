@@ -29,8 +29,14 @@ pipeline {
         }
         stage(Lint) {
             steps {
-                
+
                 sh 'npm run lint --workspaces --if-present'
+            }
+        }
+
+        stage('Typescript Check') {
+            steps {
+                sh 'npx tsc -b --noEmit'
             }
         }
     }
