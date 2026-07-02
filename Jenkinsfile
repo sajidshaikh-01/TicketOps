@@ -25,6 +25,7 @@ pipeline {
         stage('Installl Dependencies') {
             steps {
                 sh 'npm ci'
+                sh 'npm run prisma:generate --workspace=@ticketops/prisma'
             }
         }
         stage('Code Quality') {
