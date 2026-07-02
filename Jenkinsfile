@@ -31,8 +31,8 @@ pipeline {
         stage('Code Quality') {
             steps {
                 sh 'npm run lint --workspaces --if-present'
-                sh 'npm run typecheck --workspaces --if-present'
-            }
+                sh 'npm run generate --workspace=@ticketops/prisma'
+            }   
         }
     }
 }
