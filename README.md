@@ -187,3 +187,44 @@ Wiring all 4 services + Postgres + Redis into one `docker compose up` is straigh
 | 12 | SRE: SLOs, SLIs, error budgets, runbooks, disaster recovery | Not started |
 
 Each service already exposes `/health` (liveness) and `/ready` (readiness, checking real dependencies) specifically so Kubernetes probes in Phase 5+ have something real to call.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+jenkins-token:
+ sqp_0ec2ef8b6ba6aeac4086ced81c5e5e0066287c77
+
+jenkins-token: sqp_0ec2ef8b6ba6aeac4086ced81c5e5e0066287c77
+
+sqp_0ec2ef8b6ba6aeac4086ced81c5e5e0066287c77
+
+
+docker hub token -  dckr_pat_GZLXH-4VLn6L4oQ2qMUkG1jn3N8
+
+
+
+github token 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
