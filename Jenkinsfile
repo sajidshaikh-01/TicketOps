@@ -35,5 +35,16 @@ pipeline {
                 sh 'npm run typecheck --workspaces --if-present'
             }
         }
+
+        stage('Unit Tests') {
+            steps {
+                sh 'npm run test:cov --workspaces --if-present'
+            }
+            post {
+                always {
+                    archiveArtifacts artifacts: '**/coverage/**', allowEmptyArchive: true
+                }
+            }
+        }
     }
 }
