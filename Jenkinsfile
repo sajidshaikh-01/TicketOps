@@ -15,7 +15,7 @@ pipeline {
                 sh '''
                    pwd
                    ls -la
-                   la apps
+                   ls apps
                 '''
             }
         }
