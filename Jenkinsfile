@@ -7,16 +7,19 @@ pipeline {
         stage('Checkout'){
             steps {
                 checkout scm
-            }
-        }
+                script {
+                    env.GIT_SHA = sh(
+                        script: 'git rev-parse --short HEAD',
+                        returnStdout: true
+                    ).trim()
 
-        stage('Verify Workspace') {
-            steps {
-                sh '''
-                   pwd
-                   ls -la
-                   ls apps
-                '''
+                    env.GIT_BRANCH_NAME = env.BRANCH_NAME ?: sh(
+                        script: 'git rev-parse --abbrev-ref HEAD',
+                        returnStdout: true
+                    ).trim()
+                }
+                echo "Building commit ${env.GIT_SHA}"
+                echo "Building branch ${env.GIT_BRANCH_NAME}"
             }
         }
     }
