@@ -4,23 +4,30 @@ pipeline {
     }
 
     stages {
+
         stage('Checkout') {
             steps {
                 checkout scm
             }
         }
 
-        stage('Verify') {
+        stage('Verify Workspace') {
             steps {
                 sh '''
-                pwd
-                ls -la
-                git branch
-                node -v
-                docker --version
-                java -version
+                    echo "Current Directory:"
+                    pwd
+
+                    echo "Git Branch:"
+                    git branch
+
+                    echo "Workspace Files:"
+                    ls -la
+
+                    echo "Apps:"
+                    ls apps
                 '''
             }
         }
+
     }
 }
