@@ -34,9 +34,9 @@ pipeline {
             }
         }
 
-        stage('Typescript Check') {
-            steps {
-                sh 'npx tsc -b --noEmit'
+        stage('Build') {
+        steps {
+            sh 'npm run build'
             }
         }
     }
