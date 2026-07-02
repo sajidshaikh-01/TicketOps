@@ -28,9 +28,9 @@ pipeline {
             }
         }
         stage('Code Quality') {
-      steps {
-        sh 'npm run lint --workspaces --if-present'
-        sh 'npx tsc -b --noEmit'
+           steps {
+                sh 'npm run lint --workspaces --if-present'
+                sh 'npm exec --workspaces --if-present -- tsc --noEmit'
             }
         }
     }
