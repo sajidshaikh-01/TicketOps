@@ -27,16 +27,10 @@ pipeline {
                 sh 'npm ci'
             }
         }
-        stage(Lint) {
-            steps {
-
-                sh 'npm run lint --workspaces --if-present'
-            }
-        }
-
-        stage('Build') {
-        steps {
-            sh 'npm run build'
+        stage('Code Quality') {
+      steps {
+        sh 'npm run lint --workspaces --if-present'
+        sh 'npx tsc -b --noEmit'
             }
         }
     }
