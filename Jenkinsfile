@@ -27,5 +27,11 @@ pipeline {
                 sh 'npm ci'
             }
         }
+        stage(Lint) {
+            steps {
+                
+                sh 'npm run lint --workspaces --if-present'
+            }
+        }
     }
 }
