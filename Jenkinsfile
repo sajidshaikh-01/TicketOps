@@ -2,10 +2,9 @@ pipeline {
     agent {
         label 'ticketops-agent'
     }
+    stages{
 
-    stages {
-
-        stage('Checkout') {
+        stage('Checkout'){
             steps {
                 checkout scm
             }
@@ -14,20 +13,11 @@ pipeline {
         stage('Verify Workspace') {
             steps {
                 sh '''
-                    echo "Current Directory:"
-                    pwd
-
-                    echo "Git Branch:"
-                    git branch
-
-                    echo "Workspace Files:"
-                    ls -la
-
-                    echo "Apps:"
-                    ls apps
+                   pwd
+                   ls -la
+                   la apps
                 '''
             }
         }
-
     }
 }
