@@ -145,5 +145,33 @@ pipeline {
                 }
             }
         }
+
+        stage('Docker Push') {
+            when {
+                anyOf {
+                    branch 'main'
+                    branch 'develop'
+                }
+            }
+            steps {
+                script {
+                    def services = ['events-api', 'admin-api', 'bookings-worker', 'dashboard']
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                        sh 'echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin'
+                        for (svc in services) {
+                            sh """
+                                docker push ${env.IMAGE_PREFIX}-${svc}:${env.GIT_SHA}
+                                docker push ${env.IMAGE_PREFIX}-${svc}:${env.GIT_BRANCH_NAME}
+                            """
+                        }
+                    }
+                }
+            }
+            post {
+                always {
+                    sh 'docker logout'
+                }
+            }
+        }
     }
 }
