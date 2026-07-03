@@ -94,9 +94,9 @@ pipeline {
                         '''
                     }
                 }
+                sh 'echo "--- looking for report-task.txt ---" && find . -name "report-task.txt" -exec cat {} \\;'
             }
         }
-
         stage('Quality Gate') {
             steps {
                 timeout(time: 5, unit: 'MINUTES') {
