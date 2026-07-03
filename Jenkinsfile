@@ -180,5 +180,14 @@ pipeline {
                 }
             }
         }
+
+        stage('Cleanup') {
+            steps {
+                sh '''
+                    docker image prune -af || true
+                    docker builder prune -af || true
+                '''
+            }
+        }
     }
 }
