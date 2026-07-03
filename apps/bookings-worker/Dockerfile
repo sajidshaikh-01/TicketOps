@@ -21,6 +21,7 @@ WORKDIR /workspace
 
 COPY package.json package-lock.json* ./
 COPY packages/prisma/package.json packages/prisma/package.json
+COPY packages/prisma/prisma packages/prisma/prisma
 COPY apps/bookings-worker/package.json apps/bookings-worker/package.json
 COPY apps/events-api/package.json apps/events-api/package.json
 COPY apps/admin-api/package.json apps/admin-api/package.json

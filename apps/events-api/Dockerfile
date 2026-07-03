@@ -24,6 +24,7 @@ WORKDIR /workspace
 # no package.json changes, `npm ci` is skipped entirely on rebuilds.
 COPY package.json package-lock.json* ./
 COPY packages/prisma/package.json packages/prisma/package.json
+COPY packages/prisma/prisma packages/prisma/prisma
 COPY apps/events-api/package.json apps/events-api/package.json
 
 # npm workspaces needs every workspace's package.json present to resolve the
