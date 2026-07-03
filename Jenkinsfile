@@ -32,7 +32,14 @@ pipeline {
 
         stage('Install Dependencies') {
             steps {
-                sh 'npm ci'
+                cache(maxCacheSize: 1000, caches: [
+                    arbitraryFileCache(
+                        path: '.npm-cache',
+                        cacheValidityDecidingFile: 'package-lock.json'
+                    )
+                ]) {
+                    sh 'npm ci --cache .npm-cache'
+                }
             }
         }
 
