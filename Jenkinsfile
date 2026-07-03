@@ -77,26 +77,25 @@ pipeline {
 
         stage('SonarQube SAST') {
             steps {
+                script {
+                    env.SCANNER_HOME = tool 'sonar-scanner'
+                }
                 withSonarQubeEnv('ticketops-sonarqube') {
                     withCredentials([string(credentialsId: 'sonarqube-token', variable: 'SONAR_TOKEN')]) {
                         sh '''
-                            docker run --rm \
-                            --network host \
-                            -v "$PWD:/usr/src" \
-                            -w /usr/src \
-                            sonarsource/sonar-scanner-cli:latest \
-                            -Dsonar.host.url=${SONAR_HOST_URL} \
-                            -Dsonar.login=${SONAR_TOKEN} \
-                            -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
-                            -Dsonar.sources=apps,packages \
-                            -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/coverage/**,**/generated/** \
-                            -Dsonar.javascript.lcov.reportPaths=**/coverage/lcov.info
+                            "$SCANNER_HOME"/bin/sonar-scanner \
+                              -Dsonar.host.url=${SONAR_HOST_URL} \
+                              -Dsonar.login=${SONAR_TOKEN} \
+                              -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+                              -Dsonar.sources=apps,packages \
+                              -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/coverage/**,**/generated/** \
+                              -Dsonar.javascript.lcov.reportPaths=**/coverage/lcov.info
                         '''
                     }
                 }
-                sh 'echo "--- looking for report-task.txt ---" && find . -name "report-task.txt" -exec cat {} \\;'
             }
         }
+
         stage('Quality Gate') {
             steps {
                 timeout(time: 5, unit: 'MINUTES') {
