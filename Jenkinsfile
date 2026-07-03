@@ -2,6 +2,12 @@ pipeline {
     agent {
         label 'ticketops-agent'
     }
+
+    environment {
+        SONAR_HOST_URL = 'http://54.89.147.193:9000/'
+        SONAR_PROJECT_KEY = 'ticketops'
+    }
+
     stages {
 
         stage('Checkout') {
@@ -47,29 +53,46 @@ pipeline {
             }
         }
 
-        stage('OWASP Dependency Check') {
+        // stage('OWASP Dependency Check') {
+        //     steps {
+        //         catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
+        //             sh '''
+        //                 docker run --rm \
+        //                 -v "$PWD:/src" \
+        //                 -v owasp-dc-data:/usr/share/dependency-check/data \
+        //                 owasp/dependency-check:latest \
+        //                 --scan /src \
+        //                 --format "HTML" --format "JSON" \
+        //                 --out /src/dependency-check-report \
+        //                 --project ticketops
+        //             '''
+        //         }
+        //     }
+        //     post {
+        //         always {
+        //             archiveArtifacts artifacts: 'dependency-check-report/**', allowEmptyArchive: true
+        //         }
+        //     }
+        // }
+
+        stage('SonarQube SAST') {
             steps {
-                catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
+                withCredentials([string(credentialsId: 'sonarqube-token', variable: 'SONAR_TOKEN')]) {
                     sh '''
                         docker run --rm \
-                        -v "$PWD:/src" \
-                        -v owasp-dc-data:/usr/share/dependency-check/data \
-                        owasp/dependency-check:latest \
-                        --scan /src \
-                        --format "HTML" --format "JSON" \
-                        --out /src/dependency-check-report \
-                        --project ticketops
+                        --network host \
+                        -v "$PWD:/usr/src" \
+                        -w /usr/src \
+                        sonarsource/sonar-scanner-cli:latest \
+                        -Dsonar.host.url=${SONAR_HOST_URL} \
+                        -Dsonar.login=${SONAR_TOKEN} \
+                        -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+                        -Dsonar.sources=apps,packages \
+                        -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/coverage/**,**/generated/** \
+                        -Dsonar.javascript.lcov.reportPaths=**/coverage/lcov.info
                     '''
-                }
-            }
-            post {
-                always {
-                    archiveArtifacts artifacts: 'dependency-check-report/**', allowEmptyArchive: true
                 }
             }
         }
     }
 }
-
-
-
