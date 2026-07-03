@@ -26,7 +26,7 @@ COPY apps/events-api/package.json apps/events-api/package.json
 COPY apps/admin-api/package.json apps/admin-api/package.json
 COPY apps/dashboard/package.json apps/dashboard/package.json
 
-RUN npm ci --include-workspace-root
+RUN npm ci --ignore-scripts --include-workspace-root
 
 # ---------------------------------------------------------------------------
 # Stage: build
@@ -55,7 +55,7 @@ COPY apps/events-api/package.json apps/events-api/package.json
 COPY apps/admin-api/package.json apps/admin-api/package.json
 COPY apps/dashboard/package.json apps/dashboard/package.json
 
-RUN npm ci --omit=dev --include-workspace-root
+RUN npm ci --omit=dev --ignore-scripts --include-workspace-root
 
 # ---------------------------------------------------------------------------
 # Stage: runtime
