@@ -120,5 +120,30 @@ pipeline {
                 }
             }
         }
+
+        stage('Trivy Image Scan') {
+            steps {
+                script {
+                    def services = ['events-api', 'admin-api', 'bookings-worker', 'dashboard']
+                    for (svc in services) {
+                        catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
+                            sh """
+                                trivy image \
+                                --severity HIGH,CRITICAL \
+                                --format table \
+                                --output trivy-report-${svc}.txt \
+                                --exit-code 0 \
+                                ${env.IMAGE_PREFIX}-${svc}:${env.GIT_SHA}
+                            """
+                        }
+                    }
+                }
+            }
+            post {
+                always {
+                    archiveArtifacts artifacts: 'trivy-report-*.txt', allowEmptyArchive: true
+                }
+            }
+        }
     }
 }
