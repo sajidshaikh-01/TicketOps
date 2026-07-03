@@ -77,20 +77,30 @@ pipeline {
 
         stage('SonarQube SAST') {
             steps {
-                withCredentials([string(credentialsId: 'sonarqube-token', variable: 'SONAR_TOKEN')]) {
-                    sh '''
-                        docker run --rm \
-                        --network host \
-                        -v "$PWD:/usr/src" \
-                        -w /usr/src \
-                        sonarsource/sonar-scanner-cli:latest \
-                        -Dsonar.host.url=${SONAR_HOST_URL} \
-                        -Dsonar.login=${SONAR_TOKEN} \
-                        -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
-                        -Dsonar.sources=apps,packages \
-                        -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/coverage/**,**/generated/** \
-                        -Dsonar.javascript.lcov.reportPaths=**/coverage/lcov.info
-                    '''
+                withSonarQubeEnv('ticketops-sonarqube') {
+                    withCredentials([string(credentialsId: 'sonarqube-token', variable: 'SONAR_TOKEN')]) {
+                        sh '''
+                            docker run --rm \
+                            --network host \
+                            -v "$PWD:/usr/src" \
+                            -w /usr/src \
+                            sonarsource/sonar-scanner-cli:latest \
+                            -Dsonar.host.url=${SONAR_HOST_URL} \
+                            -Dsonar.login=${SONAR_TOKEN} \
+                            -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+                            -Dsonar.sources=apps,packages \
+                            -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/coverage/**,**/generated/** \
+                            -Dsonar.javascript.lcov.reportPaths=**/coverage/lcov.info
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
                 }
             }
         }
