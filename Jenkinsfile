@@ -4,8 +4,9 @@ pipeline {
     }
 
     environment {
-        SONAR_HOST_URL = 'http://54.89.147.193:9000/'
-        SONAR_PROJECT_KEY = 'ticketops'
+        SONAR_HOST_URL     = 'http://54.89.147.193:9000/'
+        SONAR_PROJECT_KEY  = 'ticketops'
+        IMAGE_PREFIX       = 'sajid0100/ticketops'
     }
 
     stages {
@@ -100,6 +101,22 @@ pipeline {
             steps {
                 timeout(time: 5, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+
+        stage('Docker Build') {
+            steps {
+                script {
+                    def services = ['events-api', 'admin-api', 'bookings-worker', 'dashboard']
+                    for (svc in services) {
+                        sh """
+                            docker build \
+                              -t ${env.IMAGE_PREFIX}-${svc}:${env.GIT_SHA} \
+                              -t ${env.IMAGE_PREFIX}-${svc}:${env.GIT_BRANCH_NAME} \
+                              -f apps/${svc}/Dockerfile .
+                        """
+                    }
                 }
             }
         }
