@@ -68,6 +68,7 @@ WORKDIR /workspace
 RUN addgroup -S ticketops && adduser -S ticketops -G ticketops
 
 COPY --from=prod-deps /workspace/node_modules ./node_modules
+COPY --from=build /workspace/packages/prisma/package.json ./packages/prisma/package.json
 COPY --from=build /workspace/packages/prisma/generated ./packages/prisma/generated
 COPY --from=build /workspace/apps/bookings-worker/dist ./apps/bookings-worker/dist
 COPY apps/bookings-worker/package.json ./apps/bookings-worker/package.json

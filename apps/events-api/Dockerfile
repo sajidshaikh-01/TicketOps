@@ -78,11 +78,10 @@ FROM node:${NODE_VERSION} AS runtime
 ENV NODE_ENV=production
 WORKDIR /workspace
 
-# Run as a non-root user - standard hardening, and a prerequisite for most
-# Kubernetes PodSecurity policies later in the roadmap.
 RUN addgroup -S ticketops && adduser -S ticketops -G ticketops
 
 COPY --from=prod-deps /workspace/node_modules ./node_modules
+COPY --from=build /workspace/packages/prisma/package.json ./packages/prisma/package.json
 COPY --from=build /workspace/packages/prisma/generated ./packages/prisma/generated
 COPY --from=build /workspace/apps/events-api/dist ./apps/events-api/dist
 COPY apps/events-api/package.json ./apps/events-api/package.json
@@ -91,8 +90,6 @@ USER ticketops
 
 EXPOSE 4000
 
-# Calls /health directly rather than depending on curl/wget being present in
-# the alpine base image - Node itself is guaranteed to be there.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
   CMD node -e "require('http').get('http://localhost:4000/api/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
 
