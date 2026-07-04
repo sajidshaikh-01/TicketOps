@@ -88,16 +88,21 @@ pipeline {
                 script {
                     env.SCANNER_HOME = tool 'sonar-scanner'
                 }
+                sh '''
+                    sed -i "s#^SF:src/#SF:apps/events-api/src/#" apps/events-api/coverage/lcov.info || true
+                    sed -i "s#^SF:src/#SF:apps/admin-api/src/#" apps/admin-api/coverage/lcov.info || true
+                    sed -i "s#^SF:src/#SF:apps/bookings-worker/src/#" apps/bookings-worker/coverage/lcov.info || true
+                '''
                 withSonarQubeEnv('ticketops-sonarqube') {
                     withCredentials([string(credentialsId: 'sonarqube-token', variable: 'SONAR_TOKEN')]) {
                         sh '''
                             "$SCANNER_HOME"/bin/sonar-scanner \
-                              -Dsonar.host.url=${SONAR_HOST_URL} \
-                              -Dsonar.login=${SONAR_TOKEN} \
-                              -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
-                              -Dsonar.sources=apps,packages \
-                              -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/coverage/**,**/generated/** \
-                              -Dsonar.javascript.lcov.reportPaths=**/coverage/lcov.info
+                            -Dsonar.host.url=${SONAR_HOST_URL} \
+                            -Dsonar.login=${SONAR_TOKEN} \
+                            -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+                            -Dsonar.sources=apps,packages \
+                            -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/coverage/**,**/generated/** \
+                            -Dsonar.javascript.lcov.reportPaths=apps/events-api/coverage/lcov.info,apps/admin-api/coverage/lcov.info,apps/bookings-worker/coverage/lcov.info
                         '''
                     }
                 }
