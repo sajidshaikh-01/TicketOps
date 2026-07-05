@@ -40,6 +40,11 @@ COPY --from=deps /workspace/package.json ./package.json
 COPY packages/prisma packages/prisma
 COPY apps/bookings-worker apps/bookings-worker
 
+# openssl must be installed first: node:alpine has no `openssl` CLI, so Prisma
+# can't detect the real OpenSSL version and silently defaults to the wrong
+# one (openssl-1.1.x), producing an engine binary that fails to load at
+# runtime with "Error loading shared library libssl.so.1.1".
+RUN apk add --no-cache openssl
 RUN npm run generate --workspace=@ticketops/prisma
 RUN npm run build --workspace=@ticketops/bookings-worker
 
@@ -65,7 +70,7 @@ FROM node:${NODE_VERSION} AS runtime
 ENV NODE_ENV=production
 WORKDIR /workspace
 
-RUN addgroup -S ticketops && adduser -S ticketops -G ticketops
+RUN apk add --no-cache openssl && addgroup -S ticketops && adduser -S ticketops -G ticketops
 
 COPY --from=prod-deps /workspace/node_modules ./node_modules
 COPY --from=build /workspace/packages/prisma/package.json ./packages/prisma/package.json

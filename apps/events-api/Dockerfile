@@ -20,16 +20,10 @@ ARG NODE_VERSION=20-alpine
 FROM node:${NODE_VERSION} AS deps
 WORKDIR /workspace
 
-# Copy only the manifests first so this layer is cache-friendly: as long as
-# no package.json changes, `npm ci` is skipped entirely on rebuilds.
 COPY package.json package-lock.json* ./
 COPY packages/prisma/package.json packages/prisma/package.json
 COPY packages/prisma/prisma packages/prisma/prisma
 COPY apps/events-api/package.json apps/events-api/package.json
-
-# npm workspaces needs every workspace's package.json present to resolve the
-# install correctly, even though we only build events-api here. This is the
-# cost of a monorepo build context; .dockerignore keeps the rest light.
 COPY apps/admin-api/package.json apps/admin-api/package.json
 COPY apps/bookings-worker/package.json apps/bookings-worker/package.json
 COPY apps/dashboard/package.json apps/dashboard/package.json
@@ -47,8 +41,11 @@ COPY --from=deps /workspace/package.json ./package.json
 COPY packages/prisma packages/prisma
 COPY apps/events-api apps/events-api
 
-# Generate the Prisma client against the shared schema before compiling, so
-# `@ticketops/prisma`'s types are available to events-api's TypeScript build.
+# openssl must be installed first: node:alpine has no `openssl` CLI, so Prisma
+# can't detect the real OpenSSL version and silently defaults to the wrong
+# one (openssl-1.1.x), producing an engine binary that fails to load at
+# runtime with "Error loading shared library libssl.so.1.1".
+RUN apk add --no-cache openssl
 RUN npm run generate --workspace=@ticketops/prisma
 RUN npm run build --workspace=@ticketops/events-api
 
@@ -66,9 +63,6 @@ COPY apps/admin-api/package.json apps/admin-api/package.json
 COPY apps/bookings-worker/package.json apps/bookings-worker/package.json
 COPY apps/dashboard/package.json apps/dashboard/package.json
 
-# --omit=dev gives a much smaller node_modules than the `deps` stage, since
-# it skips typescript, @nestjs/cli, eslint, jest, prisma (CLI), etc. - none
-# of which the running service needs, only @prisma/client which is a real dependency.
 RUN npm ci --omit=dev --include-workspace-root
 
 # ---------------------------------------------------------------------------
@@ -78,7 +72,7 @@ FROM node:${NODE_VERSION} AS runtime
 ENV NODE_ENV=production
 WORKDIR /workspace
 
-RUN addgroup -S ticketops && adduser -S ticketops -G ticketops
+RUN apk add --no-cache openssl && addgroup -S ticketops && adduser -S ticketops -G ticketops
 
 COPY --from=prod-deps /workspace/node_modules ./node_modules
 COPY --from=build /workspace/packages/prisma/package.json ./packages/prisma/package.json
