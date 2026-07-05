@@ -36,7 +36,7 @@ case "$SERVICE" in
       -e REDIS_HOST=host.docker.internal \
       -e REDIS_PORT=6379 \
       -e JWT_ACCESS_SECRET=dev-access-secret-change-me \
-      -e CORS_ORIGIN=http://localhost:5173 \
+      -e CORS_ORIGIN=http://localhost:8080 \
       "$IMAGE"
     ;;
   admin-api)
@@ -44,7 +44,7 @@ case "$SERVICE" in
       -e DATABASE_URL="postgresql://ticketops:ticketops@host.docker.internal:5432/ticketops?schema=public" \
       -e JWT_ACCESS_SECRET=dev-access-secret-change-me \
       -e JWT_REFRESH_SECRET=dev-refresh-secret-change-me \
-      -e CORS_ORIGIN=http://localhost:5173 \
+      -e CORS_ORIGIN=http://localhost:8080 \
       "$IMAGE"
     ;;
   bookings-worker)
