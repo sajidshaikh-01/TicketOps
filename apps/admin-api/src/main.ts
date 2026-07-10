@@ -34,7 +34,7 @@ async function bootstrap() {
     credentials: true,
   });
 
-  app.setGlobalPrefix('api');
+  app.setGlobalPrefix('api/admin');
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle('TicketOps - Admin API')
@@ -45,7 +45,7 @@ async function bootstrap() {
     .addBearerAuth()
     .build();
   const document = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('api/docs', app, document);
+  SwaggerModule.setup('api/admin/docs', app, document);
 
   app.enableShutdownHooks();
 
