@@ -4,9 +4,13 @@ pipeline {
     }
 
     environment {
-        SONAR_HOST_URL     = 'http://54.89.147.193:9000/'
-        SONAR_PROJECT_KEY  = 'ticketops'
-        IMAGE_PREFIX       = 'sajid0100/ticketops'
+        SONAR_HOST_URL      = 'http://54.89.147.193:9000/'
+        SONAR_PROJECT_KEY   = 'ticketops'
+        AWS_REGION          = 'us-east-1'
+        ECR_REGISTRY        = '674182809289.dkr.ecr.us-east-1.amazonaws.com'
+        ECR_PREFIX          = 'ticketops-dev'
+        GITOPS_REPO_URL     = 'https://github.com/sajidshaikh-01/ticketops-platform.git'
+        GITOPS_REPO_BRANCH  = 'develop'
     }
 
     stages {
@@ -124,8 +128,7 @@ pipeline {
                     for (svc in services) {
                         sh """
                             docker build \
-                              -t ${env.IMAGE_PREFIX}-${svc}:${env.GIT_SHA} \
-                              -t ${env.IMAGE_PREFIX}-${svc}:${env.GIT_BRANCH_NAME} \
+                              -t ${env.ECR_REGISTRY}/${env.ECR_PREFIX}-${svc}:${env.GIT_SHA} \
                               -f apps/${svc}/Dockerfile .
                         """
                     }
@@ -145,7 +148,7 @@ pipeline {
                                 --format table \
                                 --output trivy-report-${svc}.txt \
                                 --exit-code 0 \
-                                ${env.IMAGE_PREFIX}-${svc}:${env.GIT_SHA}
+                                ${env.ECR_REGISTRY}/${env.ECR_PREFIX}-${svc}:${env.GIT_SHA}
                             """
                         }
                     }
@@ -158,7 +161,7 @@ pipeline {
             }
         }
 
-        stage('Docker Push') {
+        stage('ECR Push') {
             when {
                 anyOf {
                     branch 'main'
@@ -168,12 +171,67 @@ pipeline {
             steps {
                 script {
                     def services = ['events-api', 'admin-api', 'bookings-worker', 'dashboard']
-                    withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                        sh 'echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin'
-                        for (svc in services) {
+                    sh """
+                        aws ecr get-login-password --region ${env.AWS_REGION} | \
+                        docker login --username AWS --password-stdin ${env.ECR_REGISTRY}
+                    """
+                    for (svc in services) {
+                        sh """
+                            docker push ${env.ECR_REGISTRY}/${env.ECR_PREFIX}-${svc}:${env.GIT_SHA}
+                        """
+                    }
+                }
+            }
+            post {
+                always {
+                    sh 'docker logout ${ECR_REGISTRY} || true'
+                }
+            }
+        }
+
+        stage('Update GitOps Repo') {
+            when {
+                anyOf {
+                    branch 'main'
+                    branch 'develop'
+                }
+            }
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'ticketops-platform-git-write', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
+                    sh '''
+                        cat > /tmp/git-askpass.sh << 'EOF'
+#!/bin/sh
+echo "$GIT_PASS"
+EOF
+                        chmod +x /tmp/git-askpass.sh
+                    '''
+                    withEnv(['GIT_ASKPASS=/tmp/git-askpass.sh']) {
+                        retry(3) {
                             sh """
-                                docker push ${env.IMAGE_PREFIX}-${svc}:${env.GIT_SHA}
-                                docker push ${env.IMAGE_PREFIX}-${svc}:${env.GIT_BRANCH_NAME}
+                                rm -rf gitops-repo
+                                git clone -b ${env.GITOPS_REPO_BRANCH} https://\$GIT_USER@github.com/sajidshaikh-01/ticketops-platform.git gitops-repo
+                            """
+                        }
+
+                        sh """
+                            cd gitops-repo
+
+                            yq -i '.image.tag = "${env.GIT_SHA}"' helm/ticketops-service/values/dev/events-api.yaml
+                            yq -i '.image.tag = "${env.GIT_SHA}"' helm/ticketops-service/values/dev/admin-api.yaml
+                            yq -i '.image.tag = "${env.GIT_SHA}"' helm/ticketops-service/values/dev/bookings-worker.yaml
+                            yq -i '.image.tag = "${env.GIT_SHA}"' helm/ticketops-service/values/dev/dashboard.yaml
+
+                            git config user.email "jenkins@ticketops.local"
+                            git config user.name "Jenkins CI"
+
+                            git add helm/ticketops-service/values/dev/*.yaml
+                            git commit -m "chore: update image tags to ${env.GIT_SHA} [ci skip]" || echo "No changes to commit"
+                        """
+
+                        retry(3) {
+                            sh """
+                                cd gitops-repo
+                                git push origin ${env.GITOPS_REPO_BRANCH}
                             """
                         }
                     }
@@ -181,7 +239,7 @@ pipeline {
             }
             post {
                 always {
-                    sh 'docker logout'
+                    sh 'rm -rf gitops-repo /tmp/git-askpass.sh || true'
                 }
             }
         }
