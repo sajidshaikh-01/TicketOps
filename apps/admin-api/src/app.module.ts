@@ -1,6 +1,7 @@
 import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 import configuration from './config/configuration';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
@@ -24,6 +25,12 @@ import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
         limit: 60,
       },
     ]),
+    PrometheusModule.register({
+      path: '/metrics',
+      defaultMetrics: {
+        enabled: true,
+      },
+    }),
     PrismaModule,
     AuthModule,
     UsersModule,

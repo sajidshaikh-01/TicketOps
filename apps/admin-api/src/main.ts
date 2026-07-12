@@ -34,7 +34,9 @@ async function bootstrap() {
     credentials: true,
   });
 
-  app.setGlobalPrefix('api/admin');
+  app.setGlobalPrefix('api/admin', {
+    exclude: ['metrics'],
+  });
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle('TicketOps - Admin API')
