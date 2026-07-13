@@ -10,11 +10,6 @@ import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { Request, Response } from 'express';
 
-// Records two metrics per HTTP request:
-//   http_requests_total          - count, for computing request rate
-//   http_request_duration_seconds - histogram, for computing P50/P95/P99 latency
-// Both are labeled by the ROUTE PATTERN (e.g. /api/events/:id), never the raw
-// URL, to keep label cardinality bounded regardless of traffic volume.
 @Injectable()
 export class MetricsInterceptor implements NestInterceptor {
   constructor(
@@ -28,19 +23,35 @@ export class MetricsInterceptor implements NestInterceptor {
     const httpContext = context.switchToHttp();
     const request = httpContext.getRequest<Request>();
     const response = httpContext.getResponse<Response>();
+
+    if (request.path === '/metrics') {
+      return next.handle();
+    }
+
     const start = Date.now();
+    const route = request.route?.path || 'unmatched';
+
+    const record = (statusCode: number) => {
+      const durationSeconds = (Date.now() - start) / 1000;
+      const labels = {
+        method: request.method,
+        route,
+        status_code: String(statusCode),
+      };
+      this.requestsCounter.inc(labels);
+      this.durationHistogram.observe(labels, durationSeconds);
+    };
 
     return next.handle().pipe(
-      tap(() => {
-        const durationSeconds = (Date.now() - start) / 1000;
-        const route = request.route?.path || 'unmatched';
-        const labels = {
-          method: request.method,
-          route,
-          status_code: String(response.statusCode),
-        };
-        this.requestsCounter.inc(labels);
-        this.durationHistogram.observe(labels, durationSeconds);
+      tap({
+        next: () => record(response.statusCode),
+        error: (err: unknown) => {
+          const status =
+            (err as { status?: number; statusCode?: number })?.status ??
+            (err as { status?: number; statusCode?: number })?.statusCode ??
+            500;
+          record(status);
+        },
       }),
     );
   }
