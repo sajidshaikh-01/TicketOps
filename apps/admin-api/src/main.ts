@@ -20,9 +20,9 @@ async function bootstrap() {
 
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
+      whitelist: true, // strips properties not declared in the DTO
+      forbidNonWhitelisted: true, // rejects requests with unknown properties
+      transform: true, // auto-converts payloads to DTO instances (enables @Type())
       transformOptions: { enableImplicitConversion: true },
     }),
   );
@@ -34,27 +34,30 @@ async function bootstrap() {
     credentials: true,
   });
 
-  app.setGlobalPrefix('api/admin', {
+  app.setGlobalPrefix('api', {
     exclude: ['metrics'],
   });
 
   const swaggerConfig = new DocumentBuilder()
-    .setTitle('TicketOps - Admin API')
+    .setTitle('TicketOps - Events API')
     .setDescription(
-      'Authentication, JWT issuance, and event/booking management for ADMIN and ORGANIZER roles',
+      'Public event browsing, seat selection, and booking with Redis-backed seat locking',
     )
     .setVersion('1.0')
     .addBearerAuth()
     .build();
   const document = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('api/admin/docs', app, document);
+  SwaggerModule.setup('api/docs', app, document);
 
+  // Lets Nest call onModuleDestroy/onApplicationShutdown hooks (e.g.
+  // PrismaService disconnecting cleanly) when k8s sends SIGTERM during a
+  // rolling deploy, instead of the process being killed mid-request.
   app.enableShutdownHooks();
 
   const port = configService.get('port', { infer: true });
   await app.listen(port);
 
-  Logger.log(`admin-api listening on port ${port}`, 'Bootstrap');
+  Logger.log(`events-api listening on port ${port}`, 'Bootstrap');
   Logger.log(`Swagger docs available at /api/docs`, 'Bootstrap');
 }
 
