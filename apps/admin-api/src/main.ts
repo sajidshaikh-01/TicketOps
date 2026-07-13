@@ -34,14 +34,14 @@ async function bootstrap() {
     credentials: true,
   });
 
-  app.setGlobalPrefix('api', {
+  app.setGlobalPrefix('api/admin', {
     exclude: ['metrics'],
   });
 
   const swaggerConfig = new DocumentBuilder()
-    .setTitle('TicketOps - Events API')
+    .setTitle('TicketOps - Admin API')
     .setDescription(
-      'Public event browsing, seat selection, and booking with Redis-backed seat locking',
+      'Administrative operations: user management, event management, and booking oversight',
     )
     .setVersion('1.0')
     .addBearerAuth()
