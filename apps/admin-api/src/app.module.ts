@@ -4,7 +4,8 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 import configuration from './config/configuration';
 import { PrismaModule } from './prisma/prisma.module';
-import { RedisModule } from './redis/redis.module';
+import { AuthModule } from './auth/auth.module';
+import { UsersModule } from './users/users.module';
 import { EventsModule } from './events/events.module';
 import { BookingsModule } from './bookings/bookings.module';
 import { HealthModule } from './health/health.module';
@@ -18,10 +19,10 @@ import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
     }),
     ThrottlerModule.forRoot([
       {
-        // Generous default: protects against accidental hammering/bots
-        // without getting in the way of normal browsing/booking traffic.
+        // Tighter than events-api's default since admin-api includes
+        // login/register, which are natural brute-force targets.
         ttl: 60_000,
-        limit: 120,
+        limit: 60,
       },
     ]),
     PrometheusModule.register({
@@ -31,7 +32,8 @@ import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
       },
     }),
     PrismaModule,
-    RedisModule,
+    AuthModule,
+    UsersModule,
     EventsModule,
     BookingsModule,
     HealthModule,
