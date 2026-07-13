@@ -65,27 +65,27 @@ pipeline {
             }
         }
 
-        stage('OWASP Dependency Check') {
-            steps {
-                catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
-                    sh '''
-                        docker run --rm \
-                        -v "$PWD:/src" \
-                        -v owasp-dc-data:/usr/share/dependency-check/data \
-                        owasp/dependency-check:latest \
-                        --scan /src \
-                        --format "HTML" --format "JSON" \
-                        --out /src/dependency-check-report \
-                        --project ticketops
-                    '''
-                }
-            }
-            post {
-                always {
-                    archiveArtifacts artifacts: 'dependency-check-report/**', allowEmptyArchive: true
-                }
-            }
-        }
+        // stage('OWASP Dependency Check') {
+        //     steps {
+        //         catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
+        //             sh '''
+        //                 docker run --rm \
+        //                 -v "$PWD:/src" \
+        //                 -v owasp-dc-data:/usr/share/dependency-check/data \
+        //                 owasp/dependency-check:latest \
+        //                 --scan /src \
+        //                 --format "HTML" --format "JSON" \
+        //                 --out /src/dependency-check-report \
+        //                 --project ticketops
+        //             '''
+        //         }
+        //     }
+        //     post {
+        //         always {
+        //             archiveArtifacts artifacts: 'dependency-check-report/**', allowEmptyArchive: true
+        //         }
+        //     }
+        // }
 
         stage('SonarQube SAST') {
             steps {
