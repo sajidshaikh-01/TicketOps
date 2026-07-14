@@ -1,7 +1,11 @@
 import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
-import { PrometheusModule } from '@willsoto/nestjs-prometheus';
+import {
+  PrometheusModule,
+  makeCounterProvider,
+  makeHistogramProvider,
+} from '@willsoto/nestjs-prometheus';
 import configuration from './config/configuration';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
@@ -10,6 +14,7 @@ import { EventsModule } from './events/events.module';
 import { BookingsModule } from './bookings/bookings.module';
 import { HealthModule } from './health/health.module';
 import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
+import { MetricsInterceptor } from './common/interceptors/metrics.interceptor';
 
 @Module({
   imports: [
@@ -37,6 +42,20 @@ import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
     EventsModule,
     BookingsModule,
     HealthModule,
+  ],
+  providers: [
+    makeCounterProvider({
+      name: 'http_requests_total',
+      help: 'Total number of HTTP requests',
+      labelNames: ['method', 'route', 'status_code'],
+    }),
+    makeHistogramProvider({
+      name: 'http_request_duration_seconds',
+      help: 'HTTP request duration in seconds',
+      labelNames: ['method', 'route', 'status_code'],
+      buckets: [0.01, 0.05, 0.1, 0.3, 0.5, 1, 2, 5],
+    }),
+    MetricsInterceptor,
   ],
 })
 export class AppModule implements NestModule {

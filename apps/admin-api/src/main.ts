@@ -6,6 +6,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
+import { MetricsInterceptor } from './common/interceptors/metrics.interceptor';
 import { buildWinstonOptions } from './common/logger/winston.config';
 import type { AppConfig } from './config/configuration';
 
@@ -27,7 +28,10 @@ async function bootstrap() {
     }),
   );
   app.useGlobalFilters(new GlobalExceptionFilter());
-  app.useGlobalInterceptors(new LoggingInterceptor());
+  app.useGlobalInterceptors(
+    new LoggingInterceptor(),
+    app.get(MetricsInterceptor),
+  );
 
   app.enableCors({
     origin: configService.get('corsOrigin', { infer: true }),
@@ -57,7 +61,7 @@ async function bootstrap() {
   const port = configService.get('port', { infer: true });
   await app.listen(port);
 
-  Logger.log(`events-api listening on port ${port}`, 'Bootstrap');
+  Logger.log(`admin-api listening on port ${port}`, 'Bootstrap');
   Logger.log(`Swagger docs available at /api/docs`, 'Bootstrap');
 }
 
