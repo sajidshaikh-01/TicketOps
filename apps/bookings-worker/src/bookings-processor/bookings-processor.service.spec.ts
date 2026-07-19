@@ -22,6 +22,27 @@ function createMockConfigService(maxJobAttempts = 5) {
   };
 }
 
+function createMockCounter() {
+  return {
+    inc: jest.fn(),
+    labels: jest.fn().mockReturnThis(),
+  };
+}
+
+function createMockHistogram() {
+  return {
+    observe: jest.fn(),
+    startTimer: jest.fn().mockReturnValue(jest.fn()),
+  };
+}
+
+function createMockGauge() {
+  return {
+    inc: jest.fn(),
+    dec: jest.fn(),
+  };
+}
+
 const baseJob = {
   id: 'job-1',
   bookingId: 'booking-1',
@@ -49,6 +70,10 @@ describe('BookingsProcessorService', () => {
   let qrCodeService: jest.Mocked<Pick<QrCodeService, 'generateForBooking'>>;
   let seatLockReleaseService: jest.Mocked<Pick<SeatLockReleaseService, 'release'>>;
   let configService: ReturnType<typeof createMockConfigService>;
+  let jobsProcessedCounter: ReturnType<typeof createMockCounter>;
+  let jobsFailedPermanentlyCounter: ReturnType<typeof createMockCounter>;
+  let processingDurationHistogram: ReturnType<typeof createMockHistogram>;
+  let activeJobsGauge: ReturnType<typeof createMockGauge>;
 
   beforeEach(() => {
     prisma = createMockPrisma();
@@ -59,6 +84,10 @@ describe('BookingsProcessorService', () => {
     qrCodeService = { generateForBooking: jest.fn() };
     seatLockReleaseService = { release: jest.fn() };
     configService = createMockConfigService();
+    jobsProcessedCounter = createMockCounter();
+    jobsFailedPermanentlyCounter = createMockCounter();
+    processingDurationHistogram = createMockHistogram();
+    activeJobsGauge = createMockGauge();
 
     service = new BookingsProcessorService(
       prisma as unknown as PrismaService,
@@ -66,6 +95,10 @@ describe('BookingsProcessorService', () => {
       qrCodeService as unknown as QrCodeService,
       seatLockReleaseService as unknown as SeatLockReleaseService,
       configService as any,
+      jobsProcessedCounter as any,
+      jobsFailedPermanentlyCounter as any,
+      processingDurationHistogram as any,
+      activeJobsGauge as any,
     );
   });
 

@@ -1,5 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { InjectMetric } from '@willsoto/nestjs-prometheus';
+import type { Counter, Histogram, Gauge } from 'prom-client';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { QrCodeService } from '../notifications/qrcode.service';
@@ -18,6 +20,14 @@ export class BookingsProcessorService {
     private readonly qrCodeService: QrCodeService,
     private readonly seatLockReleaseService: SeatLockReleaseService,
     private readonly configService: ConfigService<AppConfig, true>,
+    @InjectMetric('booking_jobs_processed_total')
+    private readonly jobsProcessedCounter: Counter<string>,
+    @InjectMetric('booking_jobs_failed_permanently_total')
+    private readonly jobsFailedPermanentlyCounter: Counter<string>,
+    @InjectMetric('booking_job_processing_duration_seconds')
+    private readonly processingDurationHistogram: Histogram<string>,
+    @InjectMetric('booking_jobs_active')
+    private readonly activeJobsGauge: Gauge<string>,
   ) {
     this.maxAttempts = this.configService.get('maxJobAttempts', {
       infer: true,
@@ -86,6 +96,8 @@ export class BookingsProcessorService {
         where: { id: job.bookingId },
         data: { status: 'FAILED' },
       });
+      this.jobsFailedPermanentlyCounter.inc();
+      this.jobsProcessedCounter.labels('failed').inc();
       return;
     }
 
@@ -96,6 +108,10 @@ export class BookingsProcessorService {
 
     const booking = job.booking;
     const seatCodes = booking.seats.map((bs) => bs.seat.seatCode);
+
+    this.activeJobsGauge.inc();
+    const endTimer = this.processingDurationHistogram.startTimer();
+    let status: 'success' | 'failed' = 'success';
 
     try {
       const qrCodeUrl = await this.qrCodeService.generateForBooking(
@@ -135,6 +151,7 @@ export class BookingsProcessorService {
         }),
       );
     } catch (err) {
+      status = 'failed';
       const error = err as Error;
       this.logger.error(
         `Job ${jobId} failed on attempt ${job.attempts + 1}: ${error.message}`,
@@ -151,6 +168,10 @@ export class BookingsProcessorService {
         booking.customerEmail,
         error.message,
       );
+    } finally {
+      this.jobsProcessedCounter.labels(status).inc();
+      endTimer();
+      this.activeJobsGauge.dec();
     }
   }
 }
