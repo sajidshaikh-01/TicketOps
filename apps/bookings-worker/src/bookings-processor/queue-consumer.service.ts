@@ -6,6 +6,7 @@ import {
   Inject,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { context, propagation, trace, SpanKind } from '@opentelemetry/api';
 import type Redis from 'ioredis';
 import { REDIS_CLIENT } from '../redis/redis.constants';
 import { BookingsProcessorService } from './bookings-processor.service';
@@ -13,6 +14,7 @@ import type { BookingQueueMessage } from './booking-queue-message.interface';
 import type { AppConfig } from '../config/configuration';
 
 const BOOKINGS_QUEUE_KEY = 'bookings:queue';
+const tracer = trace.getTracer('bookings-worker');
 
 @Injectable()
 export class QueueConsumerService
@@ -94,17 +96,39 @@ export class QueueConsumerService
       return;
     }
 
+    // Rebuild the trace context that events-api captured at booking-creation
+    // time (see propagation.inject in bookings.service.ts). If traceContext
+    // is missing (e.g. an older message, or a reconciliation-sweep-created
+    // job with no producer context), extract() is a no-op and we just get a
+    // fresh, unlinked span below - never a hard failure.
+    const extractedContext = propagation.extract(
+      context.active(),
+      message.traceContext ?? {},
+    );
+
+    const span = tracer.startSpan(
+      'process booking job',
+      { kind: SpanKind.CONSUMER },
+      extractedContext,
+    );
+
     try {
-      await this.bookingsProcessorService.processMessage(message);
+      await context.with(
+        trace.setSpan(extractedContext, span),
+        () => this.bookingsProcessorService.processMessage(message),
+      );
     } catch (err) {
       const error = err as Error;
       this.logger.error(
         `Unhandled error processing booking ${message.bookingRef}: ${error.message}`,
         error.stack,
       );
+      span.recordException(error);
       // Deliberately not re-thrown: processJob already persists retry state
       // to the BookingJob row, so a failure here doesn't lose the job - the
       // reconciliation sweep will pick it up on its next pass regardless.
+    } finally {
+      span.end();
     }
   }
 }

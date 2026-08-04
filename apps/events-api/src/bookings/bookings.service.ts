@@ -15,6 +15,7 @@ import { REDIS_CLIENT } from '../redis/redis.constants';
 import { SeatLockService } from './seat-lock.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { JwtPayload } from '../auth/jwt-payload.interface';
+import { context, propagation } from '@opentelemetry/api';
 
 const BOOKINGS_QUEUE_KEY = 'bookings:queue';
 const CONVENIENCE_FEE_MULTIPLIER = 1.05; // 5% convenience fee, matches reference app
@@ -131,6 +132,9 @@ export class BookingsService {
       // The BookingJob row created above is the durable fallback: if Redis
       // restarts and this message is lost, the worker's reconciliation
       // sweep (see bookings-worker) will still find and process the job.
+      const traceContext: Record<string, string> = {};
+      propagation.inject(context.active(), traceContext);
+
       await this.redis.lpush(
         BOOKINGS_QUEUE_KEY,
         JSON.stringify({
@@ -142,6 +146,7 @@ export class BookingsService {
           customerEmail,
           seatCodes: uniqueSeatCodes,
           requestId,
+          traceContext,
         }),
       );
 

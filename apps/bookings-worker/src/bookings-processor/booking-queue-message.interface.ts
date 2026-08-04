@@ -9,4 +9,5 @@ export interface BookingQueueMessage {
   customerEmail: string;
   seatCodes: string[];
   requestId?: string;
+  traceContext?: Record<string, string>;
 }
