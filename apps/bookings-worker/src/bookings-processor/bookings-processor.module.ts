@@ -9,6 +9,7 @@ import { BookingsProcessorService } from './bookings-processor.service';
 import { QueueConsumerService } from './queue-consumer.service';
 import { ReconciliationSweepService } from './reconciliation-sweep.service';
 import { SeatLockReleaseService } from './seat-lock-release.service';
+import { QueueDepthMetricService } from './queue-depth-metric.service';
 import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
@@ -18,6 +19,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
     QueueConsumerService,
     ReconciliationSweepService,
     SeatLockReleaseService,
+    QueueDepthMetricService,
     makeCounterProvider({
       name: 'booking_jobs_processed_total',
       help: 'Total number of booking job processing attempts',
@@ -35,6 +37,10 @@ import { NotificationsModule } from '../notifications/notifications.module';
     makeGaugeProvider({
       name: 'booking_jobs_active',
       help: 'Number of booking jobs currently being processed',
+    }),
+    makeGaugeProvider({
+      name: 'booking_queue_depth',
+      help: 'Current length of the bookings:queue Redis list (jobs waiting to be consumed)',
     }),
   ],
 })
