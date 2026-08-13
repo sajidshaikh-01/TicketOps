@@ -95,38 +95,40 @@ export class BookingsService {
       // transaction fails for any reason, the Redis locks we took above
       // still expire naturally via TTL, so a crash here can never
       // permanently strand a seat.
-      const booking = await this.prisma.$transaction(async (tx) => {
-        const created = await tx.booking.create({
-          data: {
-            bookingRef,
-            eventId,
-            userId: user?.sub,
-            customerName,
-            customerEmail,
-            totalAmount,
-            status: 'PENDING',
-            seats: {
-              create: seats.map((seat) => ({
-                seatId: seat.id,
-                priceAtBooking:
-                  Number(event.basePrice) * Number(seat.priceTier),
-              })),
+      const { booking, bookingJobId } = await this.prisma.$transaction(
+        async (tx) => {
+          const created = await tx.booking.create({
+            data: {
+              bookingRef,
+              eventId,
+              userId: user?.sub,
+              customerName,
+              customerEmail,
+              totalAmount,
+              status: 'PENDING',
+              seats: {
+                create: seats.map((seat) => ({
+                  seatId: seat.id,
+                  priceAtBooking:
+                    Number(event.basePrice) * Number(seat.priceTier),
+                })),
+              },
             },
-          },
-          include: { seats: { include: { seat: true } } },
-        });
+            include: { seats: { include: { seat: true } } },
+          });
 
-        await tx.seat.updateMany({
-          where: { id: { in: seats.map((s) => s.id) } },
-          data: { status: SeatStatus.BOOKED },
-        });
+          await tx.seat.updateMany({
+            where: { id: { in: seats.map((s) => s.id) } },
+            data: { status: SeatStatus.BOOKED },
+          });
 
-        await tx.bookingJob.create({
-          data: { bookingId: created.id, status: 'PENDING' },
-        });
+          const job = await tx.bookingJob.create({
+            data: { bookingId: created.id, status: 'PENDING' },
+          });
 
-        return created;
-      });
+          return { booking: created, bookingJobId: job.id };
+        },
+      );
 
       // Step 3: push to the Redis list for the worker to pick up immediately.
       // The BookingJob row created above is the durable fallback: if Redis
@@ -138,7 +140,7 @@ export class BookingsService {
       await this.redis.lpush(
         BOOKINGS_QUEUE_KEY,
         JSON.stringify({
-          jobId: booking.id,
+          jobId: bookingJobId,
           bookingId: booking.id,
           bookingRef: booking.bookingRef,
           eventTitle: event.title,
